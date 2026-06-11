@@ -99,11 +99,50 @@ def _no_table_borders(table):
 
 
 def _set_col_widths(table, widths_in):
+    """Authoritatively fix column widths for a fixed-layout table.
+
+    Sets per-cell widths AND rebuilds the table's <w:tblGrid> with explicit
+    <w:gridCol> entries (twips), plus a fixed total <w:tblW>. Word honours the
+    grid for fixed layout, so this prevents auto-expansion past the page.
+    """
     table.autofit = False
+    twips = [int(round(w * 1440)) for w in widths_in]
+    total = sum(twips)
+
+    tbl = table._tbl
+    tblPr = tbl.tblPr
+
+    # Fixed total table width
+    for existing in tblPr.findall(qn("w:tblW")):
+        tblPr.remove(existing)
+    tblW = OxmlElement("w:tblW")
+    tblW.set(qn("w:w"), str(total))
+    tblW.set(qn("w:type"), "dxa")
+    tblPr.append(tblW)
+
+    # Rebuild the grid
+    for existing in tbl.findall(qn("w:tblGrid")):
+        tbl.remove(existing)
+    grid = OxmlElement("w:tblGrid")
+    for tw in twips:
+        gc = OxmlElement("w:gridCol")
+        gc.set(qn("w:w"), str(tw))
+        grid.append(gc)
+    tblPr.addnext(grid)
+
+    # Per-cell widths (dxa) for good measure
     for row in table.rows:
-        for idx, w in enumerate(widths_in):
+        for idx, tw in enumerate(twips):
             if idx < len(row.cells):
-                row.cells[idx].width = Inches(w)
+                cell = row.cells[idx]
+                cell.width = Emu(int(tw * 635))  # 1 twip = 635 EMU
+                tcPr = cell._tc.get_or_add_tcPr()
+                for ex in tcPr.findall(qn("w:tcW")):
+                    tcPr.remove(ex)
+                tcW = OxmlElement("w:tcW")
+                tcW.set(qn("w:w"), str(tw))
+                tcW.set(qn("w:type"), "dxa")
+                tcPr.append(tcW)
 
 
 def _left_accent_border(cell, hex_color, size=24):

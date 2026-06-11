@@ -130,17 +130,18 @@ def build_index_docx(suite, stories, out_path):
     mt = doc.add_table(rows=1, cols=5)
     _disable_autofit_fixed(mt)
     _set_table_borders(mt, color=T.BORDER, size=4)
-    _set_col_widths(mt, [1.15, 2.85, 1.95, 0.6, 0.6])
-    headers = ["Story Key", "Functional Area / Title", "Epic Theme", "TCs", "Pri"]
+    _set_col_widths(mt, [1.0, 2.55, 1.85, 0.45, 0.85])
+    headers = ["Story Key", "Functional Area / Title", "Epic Theme", "TCs", "Priority"]
+    aligns = ["LEFT", "LEFT", "LEFT", "CENTER", "CENTER"]
     hdr = mt.rows[0]; _set_repeat_header(hdr)
     for i, h in enumerate(headers):
         c = hdr.cells[i]
         _set_cell_bg(c, T.HEADER_FILL)
-        _set_cell_margins(c, top=55, bottom=55, left=90, right=90)
+        _set_cell_margins(c, top=55, bottom=55, left=70, right=70)
         _set_cell_vertical_alignment(c, "center")
         p = c.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if i >= 3 else WD_ALIGN_PARAGRAPH.LEFT
-        run = p.add_run(h); run.font.bold = True; run.font.size = Pt(9)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if aligns[i] == "CENTER" else WD_ALIGN_PARAGRAPH.LEFT
+        run = p.add_run(h); run.font.bold = True; run.font.size = Pt(8.5)
         run.font.color.rgb = _rgb(T.HEADER_TEXT)
     for idx, s in enumerate(stories):
         row = mt.add_row()
@@ -148,18 +149,23 @@ def build_index_docx(suite, stories, out_path):
         cells = row.cells
         for c in cells:
             _set_cell_bg(c, zebra)
-            _set_cell_margins(c, top=50, bottom=50, left=90, right=90)
+            _set_cell_margins(c, top=50, bottom=50, left=70, right=70)
             _set_cell_vertical_alignment(c, "center")
-        rk = cells[0].paragraphs[0].add_run(s["id"]); rk.font.bold = True; rk.font.size = Pt(9)
+        rk = cells[0].paragraphs[0].add_run(s["id"]); rk.font.bold = True; rk.font.size = Pt(8.5)
         rk.font.color.rgb = _rgb(T.PRIMARY_LIGHT)
-        rt = cells[1].paragraphs[0].add_run(s["title"]); rt.font.size = Pt(9)
-        re = cells[2].paragraphs[0].add_run(s["epic"]); re.font.size = Pt(8.5)
+        rt = cells[1].paragraphs[0].add_run(s["title"]); rt.font.size = Pt(8.5)
+        re = cells[2].paragraphs[0].add_run(s["epic"]); re.font.size = Pt(8)
         re.font.color.rgb = _rgb(T.SECONDARY)
         pc = cells[3].paragraphs[0]; pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
         rc = pc.add_run(str(len(s["tests"]))); rc.font.size = Pt(9); rc.font.bold = True
+        rc.font.color.rgb = _rgb(T.PRIMARY_LIGHT)
         pp = cells[4].paragraphs[0]; pp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        rp = pp.add_run(s["priority"][:4]); rp.font.size = Pt(8)
-        rp.font.color.rgb = _rgb(T.MUTED)
+        if s["priority"] in T.PRIORITY:
+            pf, pcol = T.PRIORITY[s["priority"]]
+            _chip_run(pp, s["priority"], pf, pcol)
+        else:
+            rp = pp.add_run(s["priority"]); rp.font.size = Pt(8)
+            rp.font.color.rgb = _rgb(T.MUTED)
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
     # How to use
